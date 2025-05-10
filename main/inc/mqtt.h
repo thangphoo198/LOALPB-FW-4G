@@ -1,0 +1,217 @@
+#ifndef __mqtt__h__
+#define __mqtt__h__
+#include <stdint.h>
+#include "ql_rtos.h"
+#include "ql_ssl_hal.h"
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+bool mqtt_connect,net_stt;
+int pub_mqtt(char *topic, char *mess);
+int datacall_start(void);
+void StartMQTTTask(void);
+char *GPS_info;
+char *SIM_info;
+ql_sem_t  semaRef;
+ql_queue_t wifi_que;
+ql_queue_t sim_que;
+ql_mutex_t  mutexRef;
+ql_queue_t mqtt_queue;
+ql_task_t mqtt_task;
+
+//MQTT
+
+#define SERVER_DOMAIN "broker.iotsolutions.vn"
+#define MQTT_USERNAME "thangpro1998"
+#define MQTT_PASS "thang123"
+
+
+ // MQTTS
+
+// #define SERVER_DOMAIN "broker1.loapay.vn"
+// #define MQTT_USERNAME "loapAy01"
+// #define MQTT_PASS "LOaPAY@000111"
+
+#define TOPIC_SERIAL "SERIAL_NUMBER"
+#define PROFILE_IDX 1
+#define SSL_ENABLE 0 //1 TO EN
+
+const static SSLCertPathPtr rootCA_path =
+    "\
+-----BEGIN CERTIFICATE-----\n\
+MIIDuzCCAqOgAwIBAgIUHE49midQIB6C1SskopGrtbU5xgswDQYJKoZIhvcNAQEL\n\
+BQAwbTELMAkGA1UEBhMCVk4xDjAMBgNVBAgMBUhhbm9pMQ4wDAYDVQQHDAVIYW5v\n\
+aTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRswGQYDVQQDDBJi\n\
+cm9rZXIxLmxvYXlwYXkudm4wHhcNMjQxMjEwMTYxNjI3WhcNMjcxMjEwMTYxNjI3\n\
+WjBtMQswCQYDVQQGEwJWTjEOMAwGA1UECAwFSGFub2kxDjAMBgNVBAcMBUhhbm9p\n\
+MSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRnaXRzIFB0eSBMdGQxGzAZBgNVBAMMEmJy\n\
+b2tlcjEubG9heXBheS52bjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB\n\
+ANGKAkU/iyhEfjQj9WHoW0WTB0tPfZNdZDW1BBx4Ds9iNgGLwLpYPVcvnCw1+CxS\n\
+5gwzWKkko8VUGrNEcvciEsgSoTRkIhzuY9xi69e2BdsKhR2S7ZHZBCSghHJ1YrUU\n\
+0HpvB8P/5mda8vNUyDRdLJKbSU1qLqVIMKDWwNKecOnFT3aU7o9zUBqaFPA6uNp/\n\
+817RDUskSa5utC6Tv0nQ1bN/Bjhn49fmQeThMVBnSUNIargJxAfOjE0pAaABIceb\n\
++Pl7v83p1vM7UFeSwgi0J/Ut8GlWFUTt8aHIVr9iq+sG9YDFsAf5Ya++YC9bvUfP\n\
+U+80ePaopY4L3OMIX32DhHECAwEAAaNTMFEwHQYDVR0OBBYEFH/b4pgbcEn+Bhts\n\
+cvN/n05Nnb3NMB8GA1UdIwQYMBaAFH/b4pgbcEn+BhtscvN/n05Nnb3NMA8GA1Ud\n\
+EwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAMXDd2fiF+ZPyv14jWFB0jig\n\
+oxyAILI4TxyNasx96s8tp5emDhZxf8NK5xnn6DYGtojIqlDm0+emQyuitzFF7Dmz\n\
+7+JpUTumQ6lrSvTyYnIPlz6pxe7VKXMOkXE6SnBzhFWx1MPLQepT6+4Z204R1dEm\n\
+KNJSBSKN4gS5GOynwtENfU08X+4bOw7ntMgomgkFzMQfXYkmqo1vGqdZl4QJlTAT\n\
+ypPUa9PYOvUPZ+mIMoZG6mnW3wVcvfIK6EMSHEp+abE/irt1dVmYY7fXFoIubHzY\n\
+M34q9dF8W9yzosXPW+wEJVZ6dlq9gWudYm9IG/6GDi78BQu2wMT1/SKUM6UJ3eA=\n\
+-----END CERTIFICATE-----\n\
+";
+const static SSLCertPathPtr clientCert_path =
+    "\
+-----BEGIN CERTIFICATE-----\n\
+MIIDejCCAmICFESLbfE/JTBfdOagL6wAlekmwQ7kMA0GCSqGSIb3DQEBCwUAMG0x\n\
+CzAJBgNVBAYTAlZOMQ4wDAYDVQQIDAVIYW5vaTEOMAwGA1UEBwwFSGFub2kxITAf\n\
+BgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDEbMBkGA1UEAwwSYnJva2Vy\n\
+MS5sb2F5cGF5LnZuMB4XDTI0MTIxMDE3MTQwNloXDTI3MTIxMDE3MTQwNlowgYUx\n\
+CzAJBgNVBAYTAlZOMQ4wDAYDVQQIDAVIYW5vaTEOMAwGA1UEBwwFSGFub2kxCzAJ\n\
+BgNVBAoMAlMyMQswCQYDVQQLDAJTMjEaMBgGA1UEAwwRYnJva2VyMS5sb2FwYXku\n\
+dm4xIDAeBgkqhkiG9w0BCQEWEXRlc3QwMDJAZ21haWwuY29tMIIBIjANBgkqhkiG\n\
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqsCLiTBgV4EU+AxaS1XcHT+WduidzHhO/4Zy\n\
+ngQKIXlZMBAhrit5tymWhpe+C8G/WJzlt/vSp9rmCA6t2NhPRYmVfHCqerfelV/7\n\
+NBH5qEJKD7zekvne2CS3HYphCp8imyrYiWm8f/xAQCSg8AGS6OVQQpIBqvCjUDBk\n\
+iMXb4Q/7LtYV1jrHRtLO+5eifNqQN38Mr/cO/wkHZWtvppMNV9lCLAjVmkT8GFKM\n\
+UXdowdCD4yEf6Kj+VQa1AMyZvSADIacQdm4t3cx+xmSVywy35z/awa4VxRcIgk3F\n\
+qHXeoSLSjUJ1xiH6XdKM4MPmoRgOC0dsEjV+PhDboPybDpzTCQIDAQABMA0GCSqG\n\
+SIb3DQEBCwUAA4IBAQCipf3xkbIcsfePsLWZWdRn6wG4zxDvQRcmgBdI9rL/yKqG\n\
+On5s1v+BxbVYDj3SiCTHUe9YBi3486bt6UgETxtzal3QVM2hlEUSzU6zv3yWPDHy\n\
+9rGIB0wvylrcmSOo4kvx1mvlqXRabxjNOdwOKb8Czml3en8JZm+YteJqHtZYZ920\n\
+ePq00ztavb5jJdkLtAdSZqhsyZqZSDBGBkkpE0qRGeTpw9Xw4ATiuJrZkYRAuppM\n\
+pTWT8w3sspHcNiJB7pNcsE3cpmsFTxkv+ceOWRMccCoPQpXUVb+BMlyN1b7hun8H\n\
+gXhRno+4+vTfkv8LjFWgY4ZcCThWHcpPqTat9EYW\n\
+-----END CERTIFICATE-----\n\
+";
+const static SSLCertPathPtr clientKey_path =
+    "\
+-----BEGIN PRIVATE KEY-----\n\
+MIIEugIBADANBgkqhkiG9w0BAQEFAASCBKQwggSgAgEAAoIBAQCqwIuJMGBXgRT4\n\
+DFpLVdwdP5Z26J3MeE7/hnKeBAoheVkwECGuK3m3KZaGl74Lwb9YnOW3+9Kn2uYI\n\
+Dq3Y2E9FiZV8cKp6t96VX/s0EfmoQkoPvN6S+d7YJLcdimEKnyKbKtiJabx//EBA\n\
+JKDwAZLo5VBCkgGq8KNQMGSIxdvhD/su1hXWOsdG0s77l6J82pA3fwyv9w7/CQdl\n\
+a2+mkw1X2UIsCNWaRPwYUoxRd2jB0IPjIR/oqP5VBrUAzJm9IAMhpxB2bi3dzH7G\n\
+ZJXLDLfnP9rBrhXFFwiCTcWodd6hItKNQnXGIfpd0ozgw+ahGA4LR2wSNX4+ENug\n\
+/JsOnNMJAgMBAAECgf9h00NzVZkx3hd6r5kLkCU18eLs562AIhfK9+ayoPMs5QOJ\n\
+MF9wvsz8zYFvmtVGkbm5CtU76F9ydfapUb+dJvruMToeERjv4GelLK1pJ43g2BmW\n\
+P/Pu6zjAnEhMpFBJxYy4rn4K5okYH2yv/aGL31r2ExU9uRM7hqIJ+a+fVxFMiZUT\n\
+ld/RmFFjPPihGpiaSaeMH46RIQxjJlmRKL79A2TtSZu0fU6Q82ycNXEMm/QnbNFS\n\
+54jnPOBreehHokuZ0Ntf7OCw0eIkvaEq1HV2/s7gs7U+Yy4eJPZqQiiaXnUxSgUV\n\
+EE/mdX69Pv9S/rtbdDTTdN0+Kk/2/IoADwSgpiECgYEA6OEtQEzMpzmwC3YYO8hY\n\
+NwqJYiuznjyppRiPVS3YukbyG+3nihPDaR5p3N1JHTSEyCKf71DzfqfeFTcKc0CJ\n\
+RPcLMtdJDBPBrxGn0yZmm7i0T5URX4Nn/wPIA3ruLT8VOa8bYlkxQonGJANWIcHH\n\
+IL3GQme7zmyZdxymA6m68f8CgYEAu7RZNf64XAJGNcoFaGGDECeHhT0/dRgiwHeb\n\
+jpPpXaSoiukDmflBlzu2jwDkZiWnINhDLpnZ9KM71b3CT2LLeJjz3IvkIUV2QxEG\n\
+uNHR2hN5ERZWJ2lDQrMVDE+ErX5sEBLzxPFpoMqb/yRsge4efRrknM8UECxKS4Wf\n\
+SWV2qvcCgYB1RtDvDL4TiO2rF/HkSWSDc370PWXbTllwlwm3r7rxNEFA53IvCvzh\n\
+tztAyv/DAWvNDgLVFkNJiWhB7tIIcHuwi2jMVbanqltjutR1dWU/DqlfWobBPv/k\n\
+YRcdCY9goeAiiJiV0q0IATITeMqrfVa2mlt5nZvqvK4cWgUQ2y0WKQKBgCaFqtFk\n\
+B14KsXIUleuIJ6fHFQ8JNN7JJ0isw2YNgRVQ1646iByvhQCOprbOjhFQpO4etBr6\n\
+RDrqzTreiORV+EA108Zth1I0uUKmWeTQWusQmAYjuWa5Oa6Upjsyjp40leTunszK\n\
+Zs0zB7TjOsmnnuY6ALUV4p43GMBLGhesFSCdAoGAbhiWQ0FPnsjEp1CzRMNEQMXH\n\
+WwBLpSf/gnqan3HOLAefB+rMMAze5tjW1UOY0jQuMow7MdYDw3HsO1zD01iYe8tq\n\
+whqm0fCZXeSL0ddSMTWIXwzpSbU1iOe1kbCwAnF+TqokiBRmVYApzRLpo5j4eadz\n\
+3wQCK1EXLc3goOnX//s=\n\
+-----END PRIVATE KEY-----\n\
+";
+
+
+
+// #define SERVER_DOMAIN "mqtts.ddpham216.com"
+// #define MQTT_USERNAME "fota"
+// #define MQTT_PASS "ThangTran@123@321#"
+// #define PROFILE_IDX 1
+// #define SSL_ENABLE 1
+
+// const static SSLCertPathPtr rootCA_path =
+//     "\
+// -----BEGIN CERTIFICATE-----\n\
+// MIIECzCCAvOgAwIBAgIULX5zxIpI/IXFTYgvC1MyGkmxrWgwDQYJKoZIhvcNAQEL\n\
+// BQAwgZQxCzAJBgNVBAYTAlZOMRAwDgYDVQQIDAdWaWV0bmFtMQ4wDAYDVQQHDAVI\n\
+// YW5vaTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRwwGgYDVQQD\n\
+// DBNtcXR0cy5kZHBoYW0yMTYuY29tMSIwIAYJKoZIhvcNAQkBFhNkZHBoYW0yMTZA\n\
+// Z21haWwuY29tMB4XDTI0MTEyODExNDU1NloXDTI3MTEyODExNDU1NlowgZQxCzAJ\n\
+// BgNVBAYTAlZOMRAwDgYDVQQIDAdWaWV0bmFtMQ4wDAYDVQQHDAVIYW5vaTEhMB8G\n\
+// A1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRwwGgYDVQQDDBNtcXR0cy5k\n\
+// ZHBoYW0yMTYuY29tMSIwIAYJKoZIhvcNAQkBFhNkZHBoYW0yMTZAZ21haWwuY29t\n\
+// MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAteCumWCR+qytFs8sU5TF\n\
+// KdOak1m28sWA+pSCHXl8/PsbUxvG+yxO263j2XoZmz6lbG4k61dptnebbylP01H1\n\
+// vEq7g2ghv3HlYsmyNK2sCkMlBRx82yqaAos3Jm55cYKDspb4FD3reln7IL9vv5iu\n\
+// 8JvFeWhWKBipl1DCJ7MzYLm1cqA0b+sM0JD+W5cRvPHcfKSTeXH6cpf36i5+TFa0\n\
+// V59Id4v+XY83/31Nadi4M9eap7aC5qB5rK6IfGpfaU9M+0Z022WoX6GCfCFepYp7\n\
+// PYXyiFhC5ldkademshEqUvaZMrTcvdv3GDnswS86uf2TXbtAsRAmug8k6N0lIHmA\n\
+// zwIDAQABo1MwUTAdBgNVHQ4EFgQUWkH0rbc7s66dvWdbPmiykf/83dwwHwYDVR0j\n\
+// BBgwFoAUWkH0rbc7s66dvWdbPmiykf/83dwwDwYDVR0TAQH/BAUwAwEB/zANBgkq\n\
+// hkiG9w0BAQsFAAOCAQEAiTlO0WP1Ud0Djuwgq3PCN/H5BZpvjlSln/k747V2sXBa\n\
+// 21A7azewlUcWp4nsbdJc+ipzXHCqh0Ia7ZVXPIQfuQpO1PrrkOlbgQY0MVClGm9X\n\
+// wcEM19ToPvMA7aXz7jG+UW5zA19gVJnj7RMyYQMl7l49WACiNawvtn3KrQQaBsJ3\n\
+// xB5hY6uTvXUrtczgmh50tzAj7ZwlUOU3TXIxCUse6AqvbRM9Zb2WztmKLSK8A5eN\n\
+// 3k5O1Zd1YQbQhb0ZHjCM5SB1D6fIttmaetobDppGerUYrq/WF0yEe0yJYqJw8zeJ\n\
+// +uZK+zq2mXMPZk+ORQnh+c4v5Z7IMTv31Kyfod48Pg==\n\
+// -----END CERTIFICATE-----\n\
+// ";
+// const static SSLCertPathPtr clientCert_path =
+//     "\
+// -----BEGIN CERTIFICATE-----\n\
+// MIIDrjCCApYCFDB0ium2mcZ3tZztAbzYzN8V3ApYMA0GCSqGSIb3DQEBCwUAMIGU\n\
+// MQswCQYDVQQGEwJWTjEQMA4GA1UECAwHVmlldG5hbTEOMAwGA1UEBwwFSGFub2kx\n\
+// ITAfBgNVBAoMGEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDEcMBoGA1UEAwwTbXF0\n\
+// dHMuZGRwaGFtMjE2LmNvbTEiMCAGCSqGSIb3DQEJARYTZGRwaGFtMjE2QGdtYWls\n\
+// LmNvbTAeFw0yNDExMjgxMjQxMTVaFw0yNzExMjgxMjQxMTVaMIGRMQswCQYDVQQG\n\
+// EwJWTjEOMAwGA1UECAwFSGFub2kxDjAMBgNVBAcMBUhhbm9pMQwwCgYDVQQKDANE\n\
+// RFAxDDAKBgNVBAsMA0REUDEcMBoGA1UEAwwTbXF0dHMuZGRwaGFtMjE2LmNvbTEo\n\
+// MCYGCSqGSIb3DQEJARYZZC5hY291c3RpYy4yMTZAZ21haWxsLmNvbTCCASIwDQYJ\n\
+// KoZIhvcNAQEBBQADggEPADCCAQoCggEBAKZW00XEhQJy0nmmqvWHARqYiztyCOHW\n\
+// 7QjHisz9b4ZGQz7cPq0vePKaajU9XyyDerP0s+Lvb1tYmUtlaYyjqDX9BpBpuz7A\n\
+// vWIgEX5UkolGZ7HfmyheTTATSd3s8r4edP9j0+qrSShHOvRupxl7Nsyyr1y6Cpk2\n\
+// hNim5608GXpNPG2V3nDWLE7aBhIEGjm69AQdnYWXORmxrp51JBI8p9JhlzDUJ9EG\n\
+// A79FLP1JibR6UAc5yJ18vzm3T+Bm2DWER63EHo953mgUYI5JgQvNaSR/s90CHlV1\n\
+// M3hnd6MNAiEPHNEUVEEogqHvNdWHtQmCUf2XDzQvqo3hzndAX8u7aIsCAwEAATAN\n\
+// BgkqhkiG9w0BAQsFAAOCAQEASFpaI9OE7mwcCSVr37f2k2V3y8XNpHx5NZ1x1VyL\n\
+// jcafRWBMDWYfJf4RokxSOIy+fze08WfRlyQLxJKig+aUmTBqzBT96Go4YUaWOnNj\n\
+// UevQfLEsyJ1HZKmEeNZTQic4UzmHl8iXGELtcng1IEVYsdcxJMnW2rjDu9SqovCC\n\
+// C+Zwwk9rjLiZCWYdiKxEEsVZivIYSbi1hUwyUKoJAF54ZG9NR66Ad8ML9Dq1qDGh\n\
+// VB/168BFtGcoZbFnQEmu+cr/daLtL8aLrKxUxbQr8i8CJ8KFaBOx0ZCP4bYqSLn/\n\
+// ocHsh+AaerA6jk/Hn4h1iMfN1k5QuvllIXYxN39ITY5q9w==\n\
+// -----END CERTIFICATE-----\n\
+// ";
+// const static SSLCertPathPtr clientKey_path =
+//     "\
+// -----BEGIN PRIVATE KEY-----\n\
+// MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCmVtNFxIUCctJ5\n\
+// pqr1hwEamIs7cgjh1u0Ix4rM/W+GRkM+3D6tL3jymmo1PV8sg3qz9LPi729bWJlL\n\
+// ZWmMo6g1/QaQabs+wL1iIBF+VJKJRmex35soXk0wE0nd7PK+HnT/Y9Pqq0koRzr0\n\
+// bqcZezbMsq9cugqZNoTYpuetPBl6TTxtld5w1ixO2gYSBBo5uvQEHZ2FlzkZsa6e\n\
+// dSQSPKfSYZcw1CfRBgO/RSz9SYm0elAHOcidfL85t0/gZtg1hEetxB6Ped5oFGCO\n\
+// SYELzWkkf7PdAh5VdTN4Z3ejDQIhDxzRFFRBKIKh7zXVh7UJglH9lw80L6qN4c53\n\
+// QF/Lu2iLAgMBAAECggEATs/Jp39O1BOqROhijRWrwLmxEnfb3IFUarn8ulaEHlcx\n\
+// Kln5Ol5JTI08MECFVRZwr04MY0Q1+05Vx4LjyTaLjxT1JLxr8vYoZRMzpqsUiQU6\n\
+// QW1kWvKfWN1yvLs1Yj4VCiJ2+HOypGpndQPumWSnWMJ60xD0z5YkyHAASjS1D5xA\n\
+// KudGQmpma9sTM7X9a6CylWoDZYiSTCNSu3TJ00xSoLtg2b7xAU3guBJNLScUmqEw\n\
+// 03pg93iZjLp7WwY+jfPAEGBTkfIhJp7FVwIio/3gXjMG2yivGln5z13ELVkFJ3Qi\n\
+// YyG3aMd4pcvSUm8A3oS/c5H2veGskHaWmf10qfjRcQKBgQDRAcsO5boet6jNF1yH\n\
+// KziBptzs5ebzBu8LzwSjhNGBKMh4lZ5ixYLe40VwyQfmYUP8f5EAcEwW+b/JjnPw\n\
+// ql4SdLLzOj7NLBCywaZ+FKM2ASl6rGkPEaQ5/+jCE53Dkg7nleW1C76qpGQxP/ey\n\
+// j7d8QX0d1S+XDgAG1sFg8PZEUQKBgQDLvR6I+WKLNTqFkSMwfXteAP5IefZtK6QL\n\
+// 25VPmcvXci79Ny/cTODzzCx5rkIxPvlWxMCkP7GqOMC4NOx5JD+v3oUjnSxuyhpC\n\
+// s+VHUYkMWg44gyPiZyN+w0dsEJ9GqspKhBUDumeC21qZBq5K+PCsNIxSmSPpJ8PP\n\
+// nGgJrhX0GwKBgAYFZzQmqhX4dIR0B9ZdCGOzyumINf8KVBii/h831FFEO4I9zTJL\n\
+// PlntcjKtl+yrIKpFgofgtFB1IXFNCUoFnnAprH4VT3nZqyF7MrCvJ4SGxAskrGIi\n\
+// v/hrxujQZ9saehNx3gw5KmUAF2LT1O7v9Pk/abtSSOyxGo8X4LpKNs4BAoGBAJWt\n\
+// a8hvhnEE+uhzlymhlkeabTWrvFm5zPwVJt1i/LlcHp9Ssuui40TYw/flCKYLQLz5\n\
+// MRm53XlT1mm+H9hjxBIdZSyj5KfD/ITyisfZY9jaNEZaObuz0ATpzAfdMlaFVLZn\n\
+// 0NR7Vl5xbl6r5NIZjx7EQC7SaOp6l0Vn/5rU9TXvAoGAEiF3I1lo2ZXZGJl1on/b\n\
+// iPpls1mV3WwZUM45pEM2vEtdWAuBuacqAvzRIo00usp0FgOnn8Qw0Vn34w/6QK6n\n\
+// fd6Xt4J93RRBgf50oqTOEJ721lSzC0oiHaKnsx6x392c+FAwiWEe44SkfP77OC8R\n\
+// Xx0A2TVrAlJNKCpoB3soePw=\n\
+// -----END PRIVATE KEY-----\n\
+// ";
+
+#ifdef __cplusplus
+} /*"C" */
+#endif
+
+#endif
